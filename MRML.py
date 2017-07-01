@@ -26,42 +26,44 @@ def df_analysis(df: pd.DataFrame):
 
     for cname in df.columns.values:
 
-        row = [None]*6
+        row = [None]*7
 
         tpe = df[cname].dtype
 
+        row[0] = tpe
+
         if tpe in numerics:
             nan_array = df[cname].isnull()
-            row[0] = "I'm a number"
-            row[5] = nan_array.sum() / len(nan_array)
+            row[1] = "I'm a number"
+            row[6] = nan_array.sum() / len(nan_array)
             # non_nan_array = 1-nan_array
             idx = np.where(nan_array == False)[0]
-            row[1] = df[cname].values[idx].max()
-            row[2] = df[cname].values[idx].min()
-            row[3] = row[1] - row[2]
-            row[4] = df[cname].values[idx].mean()
+            row[2] = df[cname].values[idx].max()
+            row[3] = df[cname].values[idx].min()
+            row[4] = row[2] - row[3]
+            row[5] = df[cname].values[idx].mean()
 
         elif isinstance(tpe, str):
-            row[0] = "I'm a string"
+            row[1] = "I'm a string"
 
             df2 = df[df[cname] == ' ' | df[cname] == '']
             if len(df2) > 0:
                 warn(cname + ' (string) contains missing values!')
-                row[5] = len(df2) / len(df[cname])
+                row[6] = len(df2) / len(df[cname])
 
         elif isinstance(tpe, bool):
             '''
             If pandas marked this column as boolean, there are no missing values,
             because everything is either a 0 or a 1.
             '''
-            row[0] = "I'm a boolean"
+            row[1] = "I'm a boolean"
         else:
-            row[0] = "I'm a object"
+            row[1] = "I'm a object"
             warn(cname + ' is an object! This is indicative of mixed data types!!')
 
         dta.append(row)
 
-    cls = ['General', 'Max', 'Min', 'Mean', 'Range', 'NaN %']
+    cls = ['Type', 'General', 'Max', 'Min', 'Mean', 'Range', 'NaN %']
     return pd.DataFrame(data=dta, columns=cls, index=df.columns.values)
 
 
