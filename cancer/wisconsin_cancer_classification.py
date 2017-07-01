@@ -10,6 +10,11 @@ from matplotlib import pyplot as plt
 from enum import Enum
 from warnings import warn
 
+pd.set_option('display.height', 1000)
+pd.set_option('display.max_rows', 500)
+pd.set_option('display.max_columns', 500)
+pd.set_option('display.width', 1000)
+
 
 class Models(Enum):
     KMeans = 0,
