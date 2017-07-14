@@ -18,6 +18,12 @@ class MissingValueOptions:
 
 
 def split_train(X, y):
+    """
+    Test Train Split of the data
+    :param X: A priori data
+    :param y: A posteriori data
+    :return: X_train, X_test, y_train, y_test
+    """
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.05, random_state=42)
 
@@ -25,52 +31,68 @@ def split_train(X, y):
 
 
 def df_analysis(df: pd.DataFrame):
-
+    """
+    Takes a dataframe and performs
+    :param df:
+    :return:
+    """
+    # Creating a list to append the rows of data, which will be later transformed into a DataFrame
     dta = list()
 
+    # These are the new columns of the resulting DataFrame
+    cls = ['Type', 'General', 'Max', 'Min', 'Mean', 'Range', 'NaN %', 'Numerical likelihood']
+
+    # The number of columns that our analysis will contain (detailed above)
+    cols = len(cls)
+
+    # This is the dictionary we create to store the column name and the values that are non-numeric within it
+    dictry = dict()
+
+    # These are all the categories of numbers we are considering, in order to classify a type as numeric
     numerics = (np.int16, np.int32, np.int64,
                 np.float16, np.float32, np.float64,
                 np.double, np.complex)
 
-    dictry = dict()
-
+    # for every column in the df:
     for cname in df.columns.values:
 
-        row = [None] * 8
-
+        # Declared empty row with 'cols' number of values
+        row = [None] * cols
+        # For the analysis function, we need to know the type of column
         tpe = df[cname].dtype
 
         row[0] = tpe
 
-        if tpe in numerics:
+        if tpe in numerics:  # checking to see if type is numerical
             nan_array = df[cname].isnull()
             row[1] = "I'm a number"
             row[6] = nan_array.sum() / len(nan_array)
             # non_nan_array = 1-nan_array
-            idx = np.where(nan_array == False)[0]
+            idx = np.where(nan_array==False)[0]
             row[2] = df[cname].values[idx].max()
             row[3] = df[cname].values[idx].min()
             row[4] = row[2] - row[3]
             row[5] = df[cname].values[idx].mean()
             row[7] = 1
 
-        elif isinstance(tpe, str):
+        elif isinstance(tpe, str):  # checking to see if type is a string
             row[1] = "I'm a string"
 
-            df2 = df[df[cname] == ' ' | df[cname] == '']
+            df2 = df[(df[cname] == ' ') | (df[cname] == '')]
             if len(df2) > 0:
                 warn(cname + ' (string) contains missing values!')
                 row[6] = len(df2) / len(df[cname])
             row[7] = 0
 
-        elif isinstance(tpe, bool):
+        elif isinstance(tpe, bool):  # checking to see if it is a boolean
             '''
             If pandas marked this column as boolean, there are no missing values,
             because everything is either a 0 or a 1.
             '''
             row[1] = "I'm a boolean"
             row[7] = 0
-        else:
+
+        else:  # if it is not any of the above types, we conclude it is an object
             row[1] = "I'm a object"
             row[2] = 0
             row[3] = 0
@@ -79,30 +101,27 @@ def df_analysis(df: pd.DataFrame):
             row[6] = 0
             warn(cname + ' is an object! This is indicative of mixed data types!!')
 
-            is_num, p, bad_idx = is_the_column_numeric(df, cname, threshold=0.6)
+            # Knowing that the declared type is 'object', we would like to know if it is likely to be numeric
+            is_num, row[7], bad_idx = is_the_column_numeric(df, cname, threshold=0.6)
 
+            # We store the non-numeric indices in a dictionary
             dictry[cname] = bad_idx
 
-            if is_num:
-                row[7] = p
-            else:
-                row[7] = p
-
-            # try:
-            #     df[cname].values.astype(float)
-            # except Exception as e:
-            #     msg = 'In column ' + cname + ' -> ' + str(e.args)
-            #     warn(msg)
-            #     row[7] = msg
-
+        # Append every row to a list
         dta.append(row)
 
-    cls = ['Type', 'General', 'Max', 'Min', 'Mean', 'Range', 'NaN %', 'Numerical likelihood']
+
     return pd.DataFrame(data=dta, columns=cls, index=df.columns.values), dictry
 
 
 def is_the_column_numeric(df, col_name, threshold=0.7):
-
+    """
+    Determines whether a column is numeric
+    :param df: DataFrame
+    :param col_name: name of the column we would like to analyze within the DataFrame
+    :param threshold: minimum proportion of numbers that the column should have in order to be considered numeric
+    :return: True or False, the proportion and the indices where the column is not numeric
+    """
     values = df[col_name].values
     n = len(values)
     num_counter = 0
