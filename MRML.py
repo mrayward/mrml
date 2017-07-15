@@ -3,7 +3,9 @@ import pandas as pd
 import numpy as np
 from warnings import warn
 from enum import Enum
+from matplotlib import pyplot as plt
 import os
+plt.style.use('ggplot')
 
 pd.set_option('display.height', 1000)
 pd.set_option('display.max_rows', 500)
@@ -32,7 +34,7 @@ def split_train(X, y):
 
 def df_analysis(df: pd.DataFrame):
     """
-    Takes a dataframe and performs an analysis that gives us information about the type of column and
+    Takes a DataFrame and performs an analysis that gives us information about the type of column and
     problems we may encounter with the different column types such as mixed types and missing values
     :param df: the original data in DataFrame
     :return: a DataFrame with the established parameters for analysis which are found in the 'cols' variable
@@ -99,7 +101,8 @@ def df_analysis(df: pd.DataFrame):
             row[3] = 0
             row[4] = 0
             row[5] = 0
-            row[6] = 0
+            nan_array = df[cname].isnull()
+            row[6] = nan_array.sum() / len(nan_array)
             warn(cname + ' is an object! This is indicative of mixed data types!!')
 
             # Knowing that the declared type is 'object', we would like to know if it is likely to be numeric
@@ -186,8 +189,27 @@ def make_em_nans(df: pd.DataFrame, lst_idx, col_name):
 
     df[col_name].values[lst_idx] = np.nan
 
+def histogram(df, cname):
+    """
+    Analysis of a column using a histogram to have a better picture of the values
+    :param df: the original DataFrame
+    :param cname: Column name
+    :return: a DataFrame with the values of the column and their respective frequencies
+    """
 
-def clean(df, missing_value_option: MissingValueOptions=MissingValueOptions.Keep):
+    # First option is to create a dictionary and store the values as keys and their frequencies as values
+    d = dict()
+    for v in df[cname].values:
+        if v in d.keys():
+            f = d[v]
+            f += 1
+            d[v] = f
+        else:
+            d[v] = 1
+    df = pd.DataFrame(data=d, columns=d.keys(), index=['freq'])
+    return df
+
+def clean(df, missing_value_option: MissingValueOptions=MissingValueOptions.Keep, num_threshold=0.7, str_threshold=0.2):
     """
     This function cleans a DataFrame so we can begin working with it as a clean set
     :param df: original DataFrame
@@ -213,13 +235,12 @@ def clean(df, missing_value_option: MissingValueOptions=MissingValueOptions.Keep
             pass  # It means there are no missing values and it is correct that it is a number column
 
         elif nan_perc[c] == 0 and (0 < num_likelihood[c] < 1): # It means there are no missing values, but the
-            #column has mixed data types
-            print('Inconsistent data! Do SOMETHING!', cname)
-            # TODO: implement method
+            # column has mixed data types
+
             bad_idx = bad_idx_per_column[cname]
 
-            if num_likelihood[c] > 0.7:
-                print('\t Inconsistent number column!')
+            if num_likelihood[c] > num_threshold:
+                print('\t Inconsistent number column!', cname)
                 # even though up to 30% of the data in this column is garbage, the majority of the data in this
                 # column is numeric, so we will throw away the rest of the values
                 if missing_value_option is not MissingValueOptions.Keep:
@@ -228,18 +249,29 @@ def clean(df, missing_value_option: MissingValueOptions=MissingValueOptions.Keep
                 else:
                     pass
             else:
-                print('\t Inconsistent string column!')  # TODO: implement method
+                print('\t Inconsistent string column!', cname, ' %of numbers: ', num_likelihood[c])
+                hist_df = histogram(df, cname)
+                print(hist_df)
+                hist_df.plot(kind='bar', title=cname)
 
-        elif nan_perc[c] > 0 and num_likelihood[c] == 1: # There are missing values, but the data type is consistent
+        elif nan_perc[c] > 0 and num_likelihood[c] == 1:  # There are missing values, but the data type is consistent
             print('There are missing values in this column:', cname)
             correct_missing_values(df, c_name=cname, option=missing_value_option)
 
         elif nan_perc[c] > 0 and (0 < num_likelihood[c] < 1):
             print('There are missing values AND inconsistent data!', cname)
-            # TODO: implement methods
+            if num_likelihood[c] < str_threshold:
+                hist_df = histogram(df, cname)
+                print(hist_df)
+                hist_df.plot(kind='bar', title=cname)
+            else:
+                print('\t This column is messed up because it has numbers and strings. Advice: Check it out!')
 
         elif nan_perc[c] == 0 and num_likelihood[c] == 0:
             print('This is likely a string column', cname)
+            hist_df = histogram(df, cname)
+            print(hist_df)
+            hist_df.plot(kind='bar', title=cname)
 
         else:
             print('There is something really wrong!', cname)
@@ -259,3 +291,5 @@ if __name__ == '__main__':
 
     df_ref, _ = df_analysis(data_)
     print(df_ref)
+
+    plt.show()
