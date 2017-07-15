@@ -32,9 +32,10 @@ def split_train(X, y):
 
 def df_analysis(df: pd.DataFrame):
     """
-    Takes a dataframe and performs
-    :param df:
-    :return:
+    Takes a dataframe and performs an analysis that gives us information about the type of column and
+    problems we may encounter with the different column types such as mixed types and missing values
+    :param df: the original data in DataFrame
+    :return: a DataFrame with the established parameters for analysis which are found in the 'cols' variable
     """
     # Creating a list to append the rows of data, which will be later transformed into a DataFrame
     dta = list()
@@ -111,6 +112,8 @@ def df_analysis(df: pd.DataFrame):
         dta.append(row)
 
 
+    # we ask for it to return a DataFrame, which transforms the list of values we created and identifies the columns,
+    # and we also return the dictionary that contains the indices of the values that are non/numeric
     return pd.DataFrame(data=dta, columns=cls, index=df.columns.values), dictry
 
 
@@ -149,35 +152,55 @@ def is_the_column_numeric(df, col_name, threshold=0.7):
 
 
 def correct_missing_values(df: pd.DataFrame, c_name, option: MissingValueOptions):
+    """
+    This function manages missing values by either Keeping, Deleting or Replacing them
+    :param df: Takes in the original DataFrame
+    :param c_name: Column in the DataFrame
+    :param option: This indicates how we will manage missing values based on the class created above
+    :return: A DataFrame with corrected missing values
+    """
 
     values = df[c_name].values
 
     if option is MissingValueOptions.Keep:
         pass
-    elif option is MissingValueOptions.Delete:
+    elif option is MissingValueOptions.Delete: #find and delete missing values
         # df[c_name].dropna(subset=[c_name], inplace=True)
         # idx = np.where(values != np.nan)[0]
         # df = pd.DataFrame(data=df.values[idx, :], index=df.index.values[idx], columns=df.columns)
         idx = np.where(values == np.nan)[0]
         df.drop(df.index[idx], inplace=True)
-    elif option is MissingValueOptions.Replace:
+    elif option is MissingValueOptions.Replace: #find and replace missing values by filling values forward
         # from : http://pandas.pydata.org/pandas-docs/stable/missing_data.html
         df.fillna(method='pad', inplace=True)
 
 
 def make_em_nans(df: pd.DataFrame, lst_idx, col_name):
+    """
+    Makes null values out of mixed types
+    :param df: DataFrame
+    :param lst_idx: The list of indices where the data is non-numeric in a numeric type column
+    :param col_name: Column Name
+    :return: The DataFrame with nans where there were non-numeric values in a numeric column
+    """
 
-    # v = df[col_name].values
-    # v[lst_idx] = np.nan
     df[col_name].values[lst_idx] = np.nan
 
 
 def clean(df, missing_value_option: MissingValueOptions=MissingValueOptions.Keep):
+    """
+    This function cleans a DataFrame so we can begin working with it as a clean set
+    :param df: original DataFrame
+    :param missing_value_option: identifies how to manage missing values
+    :return: information about the DataFrame
+    """
 
+    # Assigning variables to the result of our analysis function
     analysis_result_df, bad_idx_per_column = df_analysis(df)
 
     print(analysis_result_df)
 
+    # We assign variables to the NaN percentage and the likelihood that the column we are analyzing is numeric
     nan_perc = analysis_result_df['NaN %'].values
     num_likelihood = analysis_result_df['Numerical likelihood'].values
 
@@ -189,7 +212,8 @@ def clean(df, missing_value_option: MissingValueOptions=MissingValueOptions.Keep
         if nan_perc[c] == 0 and num_likelihood[c] == 1:
             pass  # It means there are no missing values and it is correct that it is a number column
 
-        elif nan_perc[c] == 0 and (0 < num_likelihood[c] < 1):
+        elif nan_perc[c] == 0 and (0 < num_likelihood[c] < 1): # It means there are no missing values, but the
+            #column has mixed data types
             print('Inconsistent data! Do SOMETHING!', cname)
             # TODO: implement method
             bad_idx = bad_idx_per_column[cname]
@@ -206,7 +230,7 @@ def clean(df, missing_value_option: MissingValueOptions=MissingValueOptions.Keep
             else:
                 print('\t Inconsistent string column!')  # TODO: implement method
 
-        elif nan_perc[c] > 0 and num_likelihood[c] == 1:
+        elif nan_perc[c] > 0 and num_likelihood[c] == 1: # There are missing values, but the data type is consistent
             print('There are missing values in this column:', cname)
             correct_missing_values(df, c_name=cname, option=missing_value_option)
 
