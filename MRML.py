@@ -189,6 +189,18 @@ def make_em_nans(df: pd.DataFrame, lst_idx, col_name):
 
     df[col_name].values[lst_idx] = np.nan
 
+def is_object_numeric(obj):
+
+    numerics = (np.double, np.complex)
+    for t in numerics:
+        try:
+            t(obj)
+            return True
+        except:
+            pass
+    return False
+
+
 def histogram(df, cname):
     """
     Analysis of a column using a histogram to have a better picture of the values
@@ -199,17 +211,22 @@ def histogram(df, cname):
 
     # First option is to create a dictionary and store the values as keys and their frequencies as values
     d = dict()
+    d['number'] = 0
     for v in df[cname].values:
-        if v in d.keys():
-            f = d[v]
-            f += 1
-            d[v] = f
+        if is_object_numeric(v):
+            d['number'] += 1
         else:
-            d[v] = 1
+            if v in d.keys():
+                f = d[v]
+                f += 1
+                d[v] = f
+            else:
+                d[v] = 1
     df = pd.DataFrame(data=d, columns=d.keys(), index=['freq'])
     return df
 
-def clean(df, missing_value_option: MissingValueOptions=MissingValueOptions.Keep, num_threshold=0.7, str_threshold=0.2):
+def clean(df, missing_value_option: MissingValueOptions=MissingValueOptions.Keep, num_threshold=0.7, str_threshold=0.2,
+          string_only_hist = False):
     """
     This function cleans a DataFrame so we can begin working with it as a clean set
     :param df: original DataFrame
@@ -219,8 +236,6 @@ def clean(df, missing_value_option: MissingValueOptions=MissingValueOptions.Keep
 
     # Assigning variables to the result of our analysis function
     analysis_result_df, bad_idx_per_column = df_analysis(df)
-
-    print(analysis_result_df)
 
     # We assign variables to the NaN percentage and the likelihood that the column we are analyzing is numeric
     nan_perc = analysis_result_df['NaN %'].values
@@ -269,14 +284,45 @@ def clean(df, missing_value_option: MissingValueOptions=MissingValueOptions.Keep
 
         elif nan_perc[c] == 0 and num_likelihood[c] == 0:
             print('This is likely a string column', cname)
-            hist_df = histogram(df, cname)
-            print(hist_df)
-            hist_df.plot(kind='bar', title=cname)
+            if string_only_hist:
+                hist_df = histogram(df, cname)
+                print(hist_df)
+                hist_df.plot(kind='bar', title=cname)
+
+            else:
+                pass
 
         else:
             print('There is something really wrong!', cname)
 
-    print()
+    return analysis_result_df
+
+
+class MrProper:
+
+    def __init__(self, df: pd.DataFrame, missing_value_option: MissingValueOptions=MissingValueOptions.Keep,
+                 numericthreshold = 0.7, stringthreshold = 0.2, stringonlyhist=False):
+        self.cleandf = df.copy()
+        self.missing_value_option = missing_value_option
+        self.numericthreshold = numericthreshold
+        self.stringthreshold = stringthreshold
+        self.stringonlyhist = stringonlyhist
+        self.prioranalysis = None
+        self.numerical_trustworthy_columns = None
+
+    def clean(self):
+        # self.cleandf will be modified by this function
+        self.prioranalysis = clean(self.cleandf,
+                                   self.missing_value_option,
+                                   self.numericthreshold,
+                                   self.stringthreshold,
+                                   self.stringonlyhist)
+        self.numerical_trustworthy_columns= self.prioranalysis[self.prioranalysis['Numerical likelihood'] == 1.0].index.values
+
+    def numerical_trustworthy_df(self):
+
+        return self.cleandf[self.numerical_trustworthy_columns]
+
 
 
 if __name__ == '__main__':
