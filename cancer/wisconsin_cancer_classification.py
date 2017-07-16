@@ -1,27 +1,39 @@
 import pandas as pd
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.svm import SVC
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.neural_network import MLPClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.base import ClassifierMixin  # 100% unnecessary!!
+from sklearn import manifold
+from matplotlib import pyplot as plt
+from enum import Enum
+from warnings import warn
+
+pd.set_option('display.height', 1000)
+pd.set_option('display.max_rows', 500)
+pd.set_option('display.max_columns', 500)
+pd.set_option('display.width', 1000)
+
+
+class Models(Enum):
+    KMeans = 0,
+    SVC = 1,
+    RandomForest = 2,
+    NN = 3
 
 
 class CleanData:
     data = None
 
     def __init__(self, file_name):
-        """
-        constructor to transform 'Diagnostic'column to numerical values
-        :param file_name: name of the file
-        """
 
         self.data = pd.read_csv(file_name)  # Pandas DataFrame
 
-        self.data['Diagnostic'] = self.data['Diagnostic'].replace({'M': 0, 'B': 1}) #Replaces 'M' and 'B' for 0 and 1 respectively
+        self.data['Diagnostic'] = self.data['Diagnostic'].replace({'M': 0, 'B': 1})
 
     def print(self):
-        """
-        Print function for sanity check
-        :return: the first ten rows of the dataframe
-        """
+
         print(self.data.head(10))
 
 
@@ -98,22 +110,61 @@ class CancerClassification:
 
         return y_pred
 
+    def plot(self):
+
+        fig = plt.figure(figsize=(15, 8))
+        ax = fig.add_subplot(111)
+
+        model = manifold.TSNE(n_components=5, init='pca')
+        # model = manifold.MDS(n_components=5)
+        # model = manifold.Isomap(n_components=5)
+        # model = manifold.SpectralEmbedding(n_components=self.X_train.shape[1], n_neighbors=5)
+
+        reduced_data = model.fit_transform(self.X_train)
+
+        ax.scatter(reduced_data[:, 0], reduced_data[:, 1], c=self.y_train*150, cmap='spectral', s=200)
+        ax.set_title("Train data")
+
+        plt.show()
+
 
 class CancerClassificationS(CancerClassification):
 
-    def __init__(self, file_name, method_):
+    def __init__(self, clean_data_object: CleanData,  training_columns, results_columns, method_: Models):
         """
         Constructor
         :param file_name: file name
         :param method: method to use (string)
         """
 
-        self.f_name = file_name
-        self.method = method_
-        self.data = pd.read_csv(file_name)
+        self.data = clean_data_object.data
+        self.x_cols = training_columns
+        self.y_cols = results_columns
+        self.__trained__ = False
 
-    def classify(self):
-        print()
+        X = self.data[self.x_cols].values
+        y = self.data[self.y_cols].values
+        self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(X, y, test_size=0.05, random_state=42)
+
+        if method_ is Models.KMeans:
+            self.method = KNeighborsClassifier(5)
+        elif method_ is Models.SVC:
+            # 'poly', 'rbf', 'sigmoid'
+            self.method = SVC(C=1.0, kernel='poly', degree=1, gamma='auto', coef0=0.0, shrinking=True,
+                              probability=False, tol=0.001, cache_size=200, class_weight=None,
+                              verbose=False, max_iter=-1, decision_function_shape=None, random_state=None)
+        elif method_ is Models.RandomForest:
+            self.method = RandomForestClassifier()
+        elif method_ is Models.NN:
+            # ‘identity’, ‘logistic’, ‘tanh’, ‘relu’
+            self.method = MLPClassifier(hidden_layer_sizes=(100, 100, 50), activation='logistic', solver='adam',
+                                        alpha=0.0001, batch_size='auto', learning_rate='constant',
+                                        learning_rate_init=0.001, power_t=0.5, max_iter=400, shuffle=True,
+                                        random_state=None, tol=1e-5, verbose=False, warm_start=False,
+                                        momentum=0.9, nesterovs_momentum=True, early_stopping=False,
+                                        validation_fraction=0.1, beta_1=0.9, beta_2=0.999, epsilon=1e-08)
+        else:
+            warn('WTF!?')
 
 
 if __name__ == '__main__':
@@ -138,10 +189,18 @@ if __name__ == '__main__':
     clean_data_obj = CleanData(f)
     clean_data_obj.print()
 
-    classification_object = CancerClassification(clean_data_object=clean_data_obj, method_=knn,
-                                                 training_columns=a, results_columns=b)
+    # classification_object = CancerClassification(clean_data_object=clean_data_obj, method_=knn,
+    #                                              training_columns=a, results_columns=b)
+    # classification_object.plot()
 
-    # clasification_object.train()
+    method_list = [Models.RandomForest, Models.SVC, Models.KMeans, Models.NN]
 
-    s = classification_object.score()
-    print('score', s)
+    for _method in method_list:
+
+        classification_object = CancerClassificationS(clean_data_object=clean_data_obj, method_=_method,
+                                                      training_columns=a, results_columns=b)
+
+        # clasification_object.train()
+
+        s = classification_object.score()
+        print(_method, 'score', s)
