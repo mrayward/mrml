@@ -4,6 +4,7 @@ import numpy as np
 from warnings import warn
 from enum import Enum
 from matplotlib import pyplot as plt
+import pickle
 import os
 plt.style.use('ggplot')
 
@@ -17,6 +18,18 @@ class MissingValueOptions:
     Keep = 0,
     Replace = 1,
     Delete = 2
+
+
+
+def save_pickle(fname, obj):
+    with open(fname, 'wb') as handle:
+        pickle.dump(obj, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+
+def load_pickle(fname):
+    with open(fname, 'rb') as handle:
+        b = pickle.load(handle)
+    return  b
 
 
 def split_train(X, y):
@@ -201,7 +214,7 @@ def is_object_numeric(obj):
     return False
 
 
-def histogram(df, cname):
+def histogram2(df, cname):
     """
     Analysis of a column using a histogram to have a better picture of the values
     :param df: the original DataFrame
@@ -215,6 +228,7 @@ def histogram(df, cname):
     for v in df[cname].values:
         if is_object_numeric(v):
             d['number'] += 1
+
         else:
             if v in d.keys():
                 f = d[v]
@@ -223,6 +237,32 @@ def histogram(df, cname):
             else:
                 d[v] = 1
     df = pd.DataFrame(data=d, columns=d.keys(), index=['freq'])
+    return df
+
+def histogram(df, cname):
+    lst = df[cname].values
+    # Unique Values
+    unique_values = df[cname].unique()
+    # Sort unique values
+    unique_values = unique_values.astype(str)
+    unique_values.sort()
+    #unique_values = unique_values[::-1]
+    n = len(unique_values)
+    i = n-1
+    number_found = False
+    class_mark = list()
+    frequency = list()
+    ni = 0
+    while i > -1 and not is_object_numeric(unique_values[i]):
+        idx = np.where(lst==unique_values[i])[0]
+        frq = len(idx)
+        class_mark.append(unique_values[i])
+        frequency.append(frq)
+        ni+=frq
+        i -= 1
+    class_mark.append('numbers')
+    frequency.append(len(lst)-ni)
+    df = pd.DataFrame(data=frequency, columns=['freq'], index=class_mark)
     return df
 
 def clean(df, missing_value_option: MissingValueOptions=MissingValueOptions.Keep, num_threshold=0.7, str_threshold=0.2,
