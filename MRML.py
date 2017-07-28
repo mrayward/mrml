@@ -13,6 +13,42 @@ pd.set_option('display.max_rows', 500)
 pd.set_option('display.max_columns', 500)
 pd.set_option('display.width', 1000)
 
+class Cdf:
+    '''
+    This class serves to calculate the cumulative distribution function and plot it
+    '''
+    def __init__(self, vals):
+        self.vals = vals.copy()
+        self.vals.sort()
+        self.p = np.linspace(start=0, stop=1, num=len(self.vals))
+
+    def plot(self, ax=None):
+        """
+        Plots the cdf
+        :param ax: matplotlib axis
+        :return: plot
+        """
+
+        if ax is None:
+            fig = plt.figure()
+            ax = fig.add_subplot(111)
+
+        ax.plot(self.p, self.vals)
+        ax.set_xlabel('probability $p(x)$')
+        ax.set_ylabel('$x$')
+        ax.set_title('Cumulative Distribution Function')
+
+    def valuesample(self, n_samples=1, px=None):
+        '''
+        create a value sample with its probability
+        :param n_samples: number of samples
+        :param px: probability of the random numbers generated from the sample of size n_samples
+        :return:
+        '''
+        if px is None:
+            px = np.random.rand(n_samples)
+        return px, np.interp(px, self.p, self.vals)
+
 
 class MissingValueOptions:
     Keep = 0,
@@ -22,11 +58,22 @@ class MissingValueOptions:
 
 
 def save_pickle(fname, obj):
+    '''
+    Save pickled file
+    :param fname: file name to be saved as
+    :param obj: object
+    :return: Write a pickled representation of obj to the open file object file
+    '''
     with open(fname, 'wb') as handle:
         pickle.dump(obj, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
 def load_pickle(fname):
+    '''
+    Loads saved pickled file to work with
+    :param fname: file name
+    :return: file that was saved as a pickle is now loaded
+    '''
     with open(fname, 'rb') as handle:
         b = pickle.load(handle)
     return  b
@@ -339,9 +386,20 @@ def clean(df, missing_value_option: MissingValueOptions=MissingValueOptions.Keep
 
 
 class MrProper:
+    '''
+    Cleaning Class
+    '''
 
     def __init__(self, df: pd.DataFrame, missing_value_option: MissingValueOptions=MissingValueOptions.Keep,
                  numericthreshold = 0.7, stringthreshold = 0.2, stringonlyhist=False):
+        '''
+        Initialize the class
+        :param df: DataFrame
+        :param missing_value_option: How to manage missing values
+        :param numericthreshold: Threshold where we consider the column to be numeric
+        :param stringthreshold: Percentage it cannot surpass in order for us consider the column to be a string
+        :param stringonlyhist: Histogram for string values
+        '''
         self.cleandf = df.copy()
         self.missing_value_option = missing_value_option
         self.numericthreshold = numericthreshold
@@ -351,6 +409,10 @@ class MrProper:
         self.numerical_trustworthy_columns = None
 
     def clean(self):
+        '''
+        Clean method
+        :return: modifies df to the clean version
+        '''
         # self.cleandf will be modified by this function
         self.prioranalysis = clean(self.cleandf,
                                    self.missing_value_option,
@@ -360,7 +422,10 @@ class MrProper:
         self.numerical_trustworthy_columns= self.prioranalysis[self.prioranalysis['Numerical likelihood'] == 1.0].index.values
 
     def numerical_trustworthy_df(self):
-
+        '''
+        cleaning numerical columns
+        :return: clean numerical trustworthy columns
+        '''
         return self.cleandf[self.numerical_trustworthy_columns]
 
 

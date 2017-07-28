@@ -12,8 +12,10 @@ from sklearn.svm                    import SVR
 from sklearn.decomposition import PCA
 from sklearn.neural_network import MLPRegressor
 
+# Setting pickle file name
 pickle_name = 'mrproper.pkl'
 
+# Check if the pickle file has been created. If it has, load it, otherwise create it.
 if os.path.exists(pickle_name):
 
     mr_proper = load_pickle(pickle_name)
