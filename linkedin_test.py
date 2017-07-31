@@ -12,3 +12,9 @@ authentication = linkedin.LinkedInAuthentication(API_KEY, API_SECRET, RETURN_URL
 print(authentication.authorization_url)  # open this url on your browser
 application = linkedin.LinkedInApplication(authentication)
 
+authentication.authorization_code = 'AQTXrv3Pe1iWS0EQvLg0NJA8ju_XuiadXACqHennhWih7iRyDSzAm5jaf3R7I8'
+token = authentication.get_access_token()
+
+# application = linkedin.LinkedInApplication(token='AQTFtPILQkJzXHrHtyQ0rjLe3W0I')
+application = linkedin.LinkedInApplication(token=token)
+

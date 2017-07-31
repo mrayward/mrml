@@ -91,6 +91,14 @@ def split_train(X, y):
 
     return X_train, X_test, y_train, y_test
 
+def sequential_train_split(X, y, train_prop=0.75):
+
+    a = int(len(X) * train_prop)
+    time_train, time_test = X[0:a], X[a:]
+    val_train, val_test = y[0:a], y[a:]
+
+    return time_train, time_test, val_train, val_test
+
 
 def df_analysis(df: pd.DataFrame):
     """
