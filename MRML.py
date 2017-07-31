@@ -13,6 +13,7 @@ pd.set_option('display.max_rows', 500)
 pd.set_option('display.max_columns', 500)
 pd.set_option('display.width', 1000)
 
+
 class Cdf:
     '''
     This class serves to calculate the cumulative distribution function and plot it
@@ -91,6 +92,7 @@ def split_train(X, y):
 
     return X_train, X_test, y_train, y_test
 
+
 def sequential_train_split(X, y, train_prop=0.75):
 
     a = int(len(X) * train_prop)
@@ -98,6 +100,18 @@ def sequential_train_split(X, y, train_prop=0.75):
     val_train, val_test = y[0:a], y[a:]
 
     return time_train, time_test, val_train, val_test
+
+
+def matricize(s, lookback=3, lookahead=1):
+    m = len(s)-lookback-lookahead+1
+    xp = np.empty((m, lookback))
+    yp = np.empty((m, lookahead))
+    idx = np.empty(m, dtype=int)
+    for i in range(m):
+        xp[i, :] = s[i:i+lookback]
+        yp[i, :] = s[i+lookback:i+lookback+lookahead]
+        idx[i] = i
+    return xp, yp, idx
 
 
 def df_analysis(df: pd.DataFrame):
