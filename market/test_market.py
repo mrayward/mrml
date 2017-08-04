@@ -15,7 +15,7 @@ from sklearn.svm import SVR, LinearSVR
 start = datetime.datetime(2000, 1, 1)
 end = datetime.datetime.today()
 
-apple_df = load_yahoo_quote('FB', start, end)
+apple_df = load_yahoo_quote('AAPL', start, end)
 print(apple_df)
 X = apple_df.index
 y = apple_df['Close'].values
@@ -49,7 +49,7 @@ models = [LinearRegression(),
           RandomForestRegressor(),
           MLPRegressor(hidden_layer_sizes=(100, 100, 100), activation="relu", solver='adam', alpha=0.0001,
                        batch_size=1, learning_rate="constant", learning_rate_init=0.001, power_t=0.5,
-                       max_iter=200, shuffle=True, random_state=None, tol=1e-8, verbose=True, warm_start=False,
+                       max_iter=20, shuffle=True, random_state=None, tol=1e-8, verbose=True, warm_start=False,
                        momentum=0.1, nesterovs_momentum=True, early_stopping=False, validation_fraction=0.1,
                        beta_1=0.9, beta_2=0.999, epsilon=1e-8),
           SVR(),
