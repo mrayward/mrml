@@ -26,7 +26,4 @@ print('Magic=', ypredict)
 
 from twitter.api import Twitter, NoAuth
 
-auth = NoAuth()
-twitter = Twitter('miriamrayward', '19115st')
-twitter.statuses.update(status="Tomorrow's Facebook closing price is $" + str(ypredict))
 
